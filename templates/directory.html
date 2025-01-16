@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="icon"
+      href="{{ url_for('static', filename='favicon.ico') }}"
+      type="image/x-icon"
+    />
+    <title>Index of {{ directory_name }}</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0px;
+        background-color: #f4f4f9;
+        color: #333;
+      }
+      .container {
+        max-width: 900px;
+        margin: auto;
+        padding: 20px;
+        background: #fff;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        border-radius: 8px;
+      }
+      h1 {
+        text-align: center;
+        margin-bottom: 45px;
+      }
+      .file-item {
+        display: flex;
+        align-items: center;
+        margin: 10px 0;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        background: #f9f9f9;
+        transition: background 0.3s;
+        height: 100px;
+      }
+      .file-item:hover {
+        background: #f0f8ff;
+      }
+      .file-item img {
+        max-width: calc(100% - 100px);
+        max-height: 100%;
+        width: auto;
+        height: auto;
+        object-fit: contain;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+      .file-item .icon {
+        font-size: 30px;
+        color: #888;
+        cursor: pointer;
+      }
+      .file-name {
+        flex-grow: 1;
+        margin-left: 15px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      a {
+        text-decoration: none;
+        color: #0066cc;
+        font-weight: bold;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Index of {{ directory_name }}</h1>
+      {% for file in files %}
+      <div class="file-item">
+        {% if file.type == 'folder' %}
+        <div class="icon">
+          <a href="/{{ file.path }}" style="text-decoration: none">📁</a>
+        </div>
+        <div class="file-name">
+          <a href="/{{ file.path }}">{{ file.name }}</a>
+        </div>
+        {% elif file.type == 'image' %}
+        <img
+          src="/{{ file.path }}"
+          alt="{{ file.name }}"
+          onclick="window.open('/{{ file.path }}', '_blank')"
+        />
+        <div class="file-name">
+          <a href="/{{ file.path }}" target="_blank">{{ file.name }}</a>
+        </div>
+        {% elif file.type == 'video' %}
+        <img
+          src="/{{ file.path }}.thumbnail"
+          alt="{{ file.name }}"
+          onclick="streamVideoInNewTab('/{{ file.path }}')"
+        />
+        <div class="file-name">
+          <a
+            href="javascript:void(0);"
+            onclick="streamVideoInNewTab('/{{ file.path }}')"
+            >{{ file.name }}</a
+          >
+        </div>
+        {% else %}
+        <div class="icon" onclick="window.open('/{{ file.path }}', '_blank')">
+          📄
+        </div>
+        <div class="file-name">
+          <a href="/{{ file.path }}" target="_blank">{{ file.name }}</a>
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    <script>
+      const streamVideoInNewTab = (src) => {
+        const htmlContent = `
+<video autoplay controls disablepictureinpicture disableremoteplayback>
+  <source
+    src="{{ endpoint }}${src}"
+  />
+  <track src="{{ endpoint }}${src.replace(
+    /\.[^/.]+$/,
+    ".vtt"
+  )}" kind="subtitles" srclang="en" label="English" default>
+</video>
+        `;
+
+        const newTab = window.open("", "_blank");
+
+        newTab.document.open();
+        newTab.document.write(htmlContent);
+        newTab.document.close();
+      };
+    </script>
+  </body>
+</html>
