@@ -13,9 +13,6 @@ app = Flask(__name__)
 BASE_DIR = '.'
 BASE_DIR_WITH_SEP = BASE_DIR + '/'
 
-LOCAL_IP = ''
-PORT = ''
-
 
 @app.route('/', defaults={'requested_path': ''})
 @app.route('/<path:requested_path>', methods=['GET'])
@@ -44,7 +41,7 @@ def list_files(requested_path):
     file_list = []
     for entry in os.scandir(relative_path):
         if entry.is_dir():
-            file_list.append({'name': entry.name, 'type': 'folder', 'path': f'{relative_path.lstrip(BASE_DIR_WITH_SEP)}/{entry.name}'.lstrip('/')})
+            file_list.append({'name': entry.name, 'type': 'folder', 'path': f'{relative_path.removeprefix(BASE_DIR_WITH_SEP)}/{entry.name}'.removeprefix('/')})
         else:
             if entry.name.endswith('.thumbnail'):
                 continue
@@ -56,7 +53,7 @@ def list_files(requested_path):
                     file_type = 'image'
                 elif mime_type.startswith('video/'):
                     file_type = 'video'
-            file_list.append({'name': entry.name, 'type': file_type, 'path': f'{relative_path.lstrip(BASE_DIR_WITH_SEP)}/{entry.name}'.lstrip('/')})
+            file_list.append({'name': entry.name, 'type': file_type, 'path': f'{relative_path.removeprefix(BASE_DIR_WITH_SEP)}/{entry.name}'.removeprefix('/')})
 
     directory_name = os.path.basename(relative_path)
     if not directory_name:
@@ -67,7 +64,6 @@ def list_files(requested_path):
         files=file_list,
         current_path=requested_path,
         directory_name=directory_name,
-        endpoint=f'http://{LOCAL_IP}:{PORT}'
     )
 
 
@@ -75,7 +71,7 @@ def send_thumbnail(file_path):
     if os.path.isfile(file_path):
         return send_file(file_path)
     
-    file_path = file_path.rstrip('.thumbnail')
+    file_path = file_path.removesuffix('.thumbnail')
 
     parent_path = Path(BASE_DIR).resolve()
     child_path = Path(file_path).resolve()
@@ -165,15 +161,10 @@ if __name__ == '__main__':
     BASE_DIR = args.base_dir
     BASE_DIR_WITH_SEP = BASE_DIR + '/'
 
-    PORT = args.port
-    if PORT < 0 or PORT > 65535:
+    port = args.port
+    if port < 0 or port > 65535:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.bind(('', 0))  # Bind to any free port
-            PORT = s.getsockname()[1]  # Get the port number
+            port = s.getsockname()[1]  # Get the port number
 
-    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
-        # Use a dummy IP and port to determine local IP
-        s.connect(("8.8.8.8", 80))
-        LOCAL_IP = s.getsockname()[0]
-
-    app.run(host='0.0.0.0', port=PORT)
+    app.run(host='0.0.0.0', port=port)

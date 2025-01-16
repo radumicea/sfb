@@ -72,6 +72,30 @@
       a:hover {
         text-decoration: underline;
       }
+      .file-item .thumbnail {
+        position: relative;
+        display: inline-block;
+        width: auto;
+        height: 100%;
+      }
+      .file-item .thumbnail img {
+        max-width: unset;
+      }
+      .file-item .thumbnail .video-indicator {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+        color: white;
+        opacity: 0;
+        transition: opacity 0.075s ease-in;
+        font-size: 20px;
+      }
+      .file-item .thumbnail:hover .video-indicator {
+        opacity: 1;
+        transition: opacity 0.075s ease-in;
+      }
     </style>
   </head>
   <body>
@@ -96,11 +120,14 @@
           <a href="/{{ file.path }}" target="_blank">{{ file.name }}</a>
         </div>
         {% elif file.type == 'video' %}
-        <img
-          src="/{{ file.path }}.thumbnail"
-          alt="{{ file.name }}"
-          onclick="streamVideoInNewTab('/{{ file.path }}')"
-        />
+        <div class="thumbnail">
+          <img
+            src="/{{ file.path }}.thumbnail"
+            alt="{{ file.name }}"
+            onclick="streamVideoInNewTab('/{{ file.path }}')"
+          />
+          <span class="video-indicator">▶</span>
+        </div>
         <div class="file-name">
           <a
             href="javascript:void(0);"
@@ -120,13 +147,26 @@
       {% endfor %}
     </div>
     <script>
+      document
+        .querySelectorAll(".file-item .thumbnail")
+        .forEach((thumbnail) => {
+          const image = thumbnail.querySelector("img");
+          const videoIndicator = thumbnail.querySelector(".video-indicator");
+          image.onload = () => {
+            videoIndicator.style.fontSize = `${Math.max(
+              30,
+              thumbnail.offsetWidth * 0.35
+            )}px`;
+          };
+        });
+
       const streamVideoInNewTab = (src) => {
         const htmlContent = `
 <video autoplay controls disablepictureinpicture disableremoteplayback>
   <source
-    src="{{ endpoint }}${src}"
+    src="${src}"
   />
-  <track src="{{ endpoint }}${src.replace(
+  <track src="${src.replace(
     /\.[^/.]+$/,
     ".vtt"
   )}" kind="subtitles" srclang="en" label="English" default>
