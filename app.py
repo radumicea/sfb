@@ -26,7 +26,7 @@ def list_files(requested_path):
     parent_path = Path(BASE_DIR).resolve()
     child_path = Path(relative_path).resolve()
     if parent_path != child_path and parent_path not in child_path.parents:
-        abort(400, 'No such path')
+        abort(403, 'Route not allowed')
 
     if os.path.isfile(relative_path):
         mime_type, _ = mimetypes.guess_type(relative_path)
@@ -36,7 +36,7 @@ def list_files(requested_path):
             return send_file(relative_path)
 
     if not os.path.isdir(relative_path):
-        abort(400, 'No such path')
+        abort(404, 'No such path')
 
     file_list = []
     for entry in os.scandir(relative_path):
@@ -55,9 +55,7 @@ def list_files(requested_path):
                     file_type = 'video'
             file_list.append({'name': entry.name, 'type': file_type, 'path': f'{relative_path.removeprefix(BASE_DIR_WITH_SEP)}/{entry.name}'.removeprefix('/')})
 
-    directory_name = os.path.basename(relative_path)
-    if not directory_name:
-        directory_name = 'root'
+    directory_name = os.path.basename(relative_path) or 'root'
 
     return render_template(
         'directory.html',
@@ -76,10 +74,10 @@ def send_thumbnail(file_path):
     parent_path = Path(BASE_DIR).resolve()
     child_path = Path(file_path).resolve()
     if parent_path != child_path and parent_path not in child_path.parents:
-        abort(400, 'No such path')
+        abort(403, 'Route not allowed')
     
     if not os.path.isfile(file_path):
-        abort(400, 'No such path')
+        abort(404, 'No such path')
         
     mime_type, _ = mimetypes.guess_type(file_path)
     if not mime_type.startswith('video/'):
@@ -114,7 +112,7 @@ def stream_video(file_path, range_header, mime_type):
     file_size = os.path.getsize(file_path)
     byte_range = range_header.replace('bytes=', '').split('-')
     start = int(byte_range[0])
-    end = int(byte_range[1]) if byte_range[1] else file_size - 1
+    end = int(byte_range[1]) if len(byte_range) > 1 and byte_range[1] else file_size - 1
 
     start_holder = [start]
 
